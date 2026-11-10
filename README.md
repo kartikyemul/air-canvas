@@ -1,14 +1,14 @@
 # AirCanvas
 
-A free, lightweight, browser-based app that will eventually let you draw in the air using your webcam.
+A free, lightweight, browser-based app that lets you draw in the air using your webcam.
 
-This is the starter project: a React homepage that talks to a FastAPI backend. Hand tracking is not added yet.
+Pinch your thumb and index finger together to draw. Open your fingers to stop.
 
 ## Tech
 
 - Frontend: React + TypeScript + Vite
+- Hand tracking: MediaPipe Tasks Vision (runs in the browser)
 - Backend: Python + FastAPI
-- Later: MediaPipe Tasks Vision
 
 ## Folder layout
 
@@ -16,12 +16,16 @@ This is the starter project: a React homepage that talks to a FastAPI backend. H
 AirCanvas/
   backend/    FastAPI server (main.py, requirements.txt)
   frontend/   React app (Vite)
+    src/App.tsx            page and backend status
+    src/DrawingStage.tsx   camera, drawing, clear and save
+    src/handTracker.ts     loads the MediaPipe hand model
 ```
 
 ## Requirements
 
 - Python 3.10 or newer
 - Node.js 18 or newer (LTS)
+- A webcam and an internet connection (the hand model loads from a CDN on first use)
 
 ## Run the backend
 
@@ -45,8 +49,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. You should see "Backend connected."
+Open http://localhost:5173, click **Start camera**, and allow camera access.
 
 ## How the two connect
 
 Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
+The drawing itself runs fully in your browser. Your camera video is not uploaded anywhere.
