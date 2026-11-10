@@ -55,3 +55,15 @@ Open http://localhost:5173, click **Start camera**, and allow camera access.
 
 Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
 The drawing itself runs fully in your browser. Your camera video is not uploaded anywhere.
+
+## Shortcuts
+
+- `C` clears the drawing
+- `S` saves it as a PNG
+
+## Troubleshooting
+
+- **Camera is blocked:** allow camera access for localhost in your browser's site settings, then click Start camera again.
+- **Stuck on loading:** the hand model downloads on first use, so check your internet connection.
+- **"Backend not reachable":** start the FastAPI server in the `backend` folder, then click Check again.
+- **Drawing is hard to trigger:** change `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`.
