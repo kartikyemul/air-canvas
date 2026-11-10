@@ -32,6 +32,7 @@ export default function DrawingStage() {
   const [error, setError] = useState("");
   const [aspect, setAspect] = useState("4 / 3");
   const [drawing, setDrawing] = useState(false);
+  const [handVisible, setHandVisible] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
 
   async function start() {
@@ -81,6 +82,7 @@ export default function DrawingStage() {
     const overlay = overlayRef.current;
     overlay?.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
     setDrawing(false);
+    setHandVisible(false);
     setPhase("idle");
   }
 
@@ -105,6 +107,7 @@ export default function DrawingStage() {
     let lastPoint: Point | null = null;
     let smooth: Point | null = null;
     let wasDrawing = false;
+    let wasVisible = false;
 
     const tick = () => {
       frameRef.current = requestAnimationFrame(tick);
@@ -116,6 +119,10 @@ export default function DrawingStage() {
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
 
       if (!hand) {
+        if (wasVisible) {
+          wasVisible = false;
+          setHandVisible(false);
+        }
         cursor.style.display = "none";
         lastPoint = null;
         smooth = null;
@@ -124,6 +131,11 @@ export default function DrawingStage() {
           setDrawing(false);
         }
         return;
+      }
+
+      if (!wasVisible) {
+        wasVisible = true;
+        setHandVisible(true);
       }
 
       if (showSkeletonRef.current) {
@@ -207,6 +219,16 @@ export default function DrawingStage() {
   }
 
   useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "c") clear();
+      if (e.key === "s") save();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
     return () => {
       cancelAnimationFrame(frameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -249,10 +271,10 @@ export default function DrawingStage() {
           </button>
         )}
         <button className="button" onClick={clear}>
-          Clear
+          Clear (C)
         </button>
         <button className="button" onClick={save}>
-          Save PNG
+          Save PNG (S)
         </button>
         <label className="toggle">
           <input
@@ -267,7 +289,11 @@ export default function DrawingStage() {
         </label>
         {running && (
           <span className="hint">
-            {drawing ? "Drawing" : "Pinch your thumb and index finger to draw."}
+            {!handVisible
+              ? "Show your hand to the camera."
+              : drawing
+              ? "Drawing"
+              : "Pinch your thumb and index finger to draw."}
           </span>
         )}
       </div>
