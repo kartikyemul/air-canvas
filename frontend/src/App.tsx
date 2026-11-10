@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DrawingStage from "./DrawingStage";
 
 type Status = "checking" | "online" | "offline";
 
@@ -31,12 +32,12 @@ export default function App() {
       <h1 className="title">AirCanvas</h1>
       <p className="tagline">Draw in the air with your webcam.</p>
 
-      <div className="canvas-box">Your canvas will appear here.</div>
+      <DrawingStage />
 
       <div className="status-row">
         <span className={`dot dot-${status}`} aria-hidden="true" />
         <span role="status">{message}</span>
-        <button className="button" onClick={checkBackend}>
+        <button className="button button-right" onClick={checkBackend}>
           Check again
         </button>
       </div>
