@@ -1,65 +1,87 @@
 # AirCanvas
 
-A free, lightweight, browser-based app that lets you draw in the air using your webcam.
+Draw in the air with your webcam. AirCanvas tracks your hand in the browser and turns a thumb-and-index pinch into a pen.
 
-Pinch your thumb and index finger together to draw. Open your fingers to stop.
+## Features
+
+- Live webcam view with hand tracking drawn over it (21 points and joints), which you can switch off
+- Pinch your thumb and index finger together to draw, open them to lift the pen
+- Smoothed lines, a cursor that squishes when you pinch, and a hint when no hand is visible
+- Clear the canvas, or save your drawing as a PNG
+- Keyboard shortcuts: `C` clears, `S` saves
+- Backend status check against a small FastAPI server
+- Dark ash design with a serif title, frosted glass panels, softly drifting light and spring animations. Animations turn off automatically if your system asks for reduced motion
 
 ## Tech
 
-- Frontend: React + TypeScript + Vite
+- Frontend: React, TypeScript, Vite, plain CSS
 - Hand tracking: MediaPipe Tasks Vision (runs in the browser)
-- Backend: Python + FastAPI
+- Backend: Python, FastAPI
 
-## Folder layout
+## Project structure
 
 ```
 AirCanvas/
-  backend/    FastAPI server (main.py, requirements.txt)
-  frontend/   React app (Vite)
-    src/App.tsx            page and backend status
-    src/DrawingStage.tsx   camera, drawing, clear and save
-    src/handTracker.ts     loads the MediaPipe hand model
+  backend/
+    main.py              FastAPI app (/, /api/health)
+    requirements.txt
+  frontend/
+    index.html
+    src/
+      main.tsx           entry point, loads the stylesheets
+      App.tsx            header, drawing stage, backend status
+      DrawingStage.tsx   camera, tracking, drawing, clear and save
+      handTracker.ts     loads the MediaPipe hand model
+      index.css          palette, type and layout
+      backdrop.css       drifting light and grain
+      glass.css          glass surfaces
+      motion.css         spring animation and reduced motion
 ```
 
 ## Requirements
 
 - Python 3.10 or newer
 - Node.js 18 or newer (LTS)
-- A webcam and an internet connection (the hand model loads from a CDN on first use)
+- A webcam and an internet connection (the hand model downloads on first use)
 
-## Run the backend
+## Run it
 
-Open a terminal in the `backend` folder:
+Open two terminals from the project root.
+
+**Backend** (terminal 1):
 
 ```
+cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Check it: http://127.0.0.1:8000/api/health should show `{"status":"ok","app":"AirCanvas"}`.
+Check it at http://127.0.0.1:8000/api/health. Interactive docs are at http://127.0.0.1:8000/docs.
 
-## Run the frontend
-
-Open a second terminal in the `frontend` folder:
+**Frontend** (terminal 2):
 
 ```
+cd frontend
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173, click **Start camera**, and allow camera access.
+Open http://localhost:5173.
 
-## How the two connect
+## How to use
 
-Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
-The drawing itself runs fully in your browser. Your camera video is not uploaded anywhere.
+1. Click **Start camera** and allow camera access.
+2. Hold your hand up so the tracking dots appear.
+3. Pinch your thumb and index finger together and move to draw.
+4. Press `C` to clear or `S` to save.
 
-## Shortcuts
+## How it works
 
-- `C` clears the drawing
-- `S` saves it as a PNG
+- Hand tracking and drawing run entirely in your browser. Your camera video is not uploaded anywhere.
+- Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
+- Pinch sensitivity is set by `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`. Line smoothing is set by `SMOOTHING` in the same file.
 
 ## Troubleshooting
 
@@ -67,3 +89,4 @@ The drawing itself runs fully in your browser. Your camera video is not uploaded
 - **Stuck on loading:** the hand model downloads on first use, so check your internet connection.
 - **"Backend not reachable":** start the FastAPI server in the `backend` folder, then click Check again.
 - **Drawing is hard to trigger:** change `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`.
+- **`activate` is blocked in PowerShell:** run `Set-ExecutionPolicy -Scope Process Bypass`, then try again.
