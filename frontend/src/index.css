@@ -41,12 +41,44 @@ body {
   line-height: 0.9;
 }
 
+.brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: 48px;
+}
+
+/* Four fine bars above the name. */
+.bars {
+  display: grid;
+  gap: 5px;
+  width: 40px;
+  margin-bottom: 26px;
+}
+
+.bars i {
+  display: block;
+  height: 2px;
+  background: var(--ink);
+}
+
 .tagline {
-  margin: 20px 0 48px;
+  max-width: 18ch;
+  margin: 0 0 6px;
   color: var(--muted);
   font-family: var(--serif);
   font-style: italic;
   font-size: 1.2rem;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .tagline {
+    max-width: none;
+    text-align: left;
+  }
 }
 
 .status-row {

@@ -29,8 +29,18 @@ export default function App() {
 
   return (
     <main className="page">
-      <h1 className="title">AirCanvas</h1>
-      <p className="tagline">Draw in the air with your webcam.</p>
+      <header className="brand">
+        <div>
+          <span className="bars" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          <h1 className="title">AirCanvas</h1>
+        </div>
+        <p className="tagline">Draw in the air with your webcam.</p>
+      </header>
 
       <DrawingStage />
 
