@@ -1,40 +1,52 @@
 :root {
-  --bg: #ffffff;
-  --ink: #000000;
-  --muted: #666666;
-  --line: #d4d4d4;
+  --bg: #0d0d0c;
+  --ink: #ece9e3;
+  --muted: #8d8b86;
+  --line: rgba(236, 233, 227, 0.18);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
 }
 
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  font-family: var(--sans);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 .page {
-  max-width: 760px;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 72px 24px;
+  padding: 72px 24px 96px;
 }
 
 .title {
   margin: 0;
-  font-size: clamp(2.75rem, 10vw, 4.5rem);
-  font-weight: 300;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  font-family: var(--serif);
+  font-size: clamp(3.25rem, 13vw, 7.5rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
 }
 
 .tagline {
-  margin: 16px 0 40px;
+  margin: 20px 0 48px;
   color: var(--muted);
-  font-size: 1.125rem;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.2rem;
 }
 
 .status-row {
@@ -60,8 +72,8 @@ body {
 }
 
 .dot-checking {
-  background: var(--line);
-  border-color: var(--line);
+  background: var(--muted);
+  border-color: var(--muted);
 }
 
 .dot-offline {
@@ -69,10 +81,10 @@ body {
 }
 
 .button {
-  padding: 6px 14px;
-  border: 1.5px solid var(--ink);
+  padding: 7px 16px;
+  border: 1px solid var(--ink);
   border-radius: 6px;
-  background: var(--bg);
+  background: transparent;
   color: var(--ink);
   font: inherit;
   cursor: pointer;
@@ -85,7 +97,7 @@ body {
 
 .button:focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .button-right {
@@ -106,9 +118,9 @@ body {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border: 1.5px solid var(--ink);
-  border-radius: 6px;
-  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #000;
 }
 
 .stage-layer {
@@ -132,6 +144,9 @@ body {
   padding: 24px;
   text-align: center;
   color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
 }
 
 .cursor {
@@ -169,4 +184,5 @@ body {
   gap: 6px;
   font-size: 0.95rem;
   cursor: pointer;
+  accent-color: var(--ink);
 }
