@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DrawingUtils, HandLandmarker } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
+import { CameraIcon, DownloadIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
 type Point = { x: number; y: number };
 type Phase = "idle" | "loading" | "running" | "error";
@@ -325,6 +326,7 @@ export default function DrawingStage() {
       <div className="toolbar">
         {running ? (
           <button className="button" onClick={stop}>
+            <StopIcon />
             Stop camera
           </button>
         ) : (
@@ -333,18 +335,38 @@ export default function DrawingStage() {
             onClick={start}
             disabled={phase === "loading"}
           >
+            <CameraIcon />
             Start camera
           </button>
         )}
+        <span className="divider" />
         <button className="button" onClick={undo}>
-          Undo (Z)
+          <UndoIcon />
+          Undo
+          <kbd>Z</kbd>
         </button>
         <button className="button" onClick={clear}>
-          Clear (C)
+          <TrashIcon />
+          Clear
+          <kbd>C</kbd>
         </button>
         <button className="button" onClick={save}>
-          Save PNG (S)
+          <DownloadIcon />
+          Save
+          <kbd>S</kbd>
         </button>
+        {running && (
+          <span className="hint">
+            {!handVisible
+              ? "Show your hand to the camera."
+              : drawing
+              ? "Drawing"
+              : "Pinch your thumb and index finger to draw."}
+          </span>
+        )}
+      </div>
+
+      <div className="toolbar">
         <div className="swatches" role="group" aria-label="Pen color">
           {COLORS.map((c) => (
             <button
@@ -370,7 +392,7 @@ export default function DrawingStage() {
             />
           </label>
         </div>
-        <label className="toggle size">
+        <label className="size">
           Size
           <span className="pen-slot">
             <span className="pen-preview" style={{ width, height: width, background: color }} />
@@ -388,9 +410,11 @@ export default function DrawingStage() {
           />
           <output className="size-value">{width}</output>
         </label>
-        <label className="toggle">
+        <span className="divider" />
+        <label className="switch">
           <input
             type="checkbox"
+            role="switch"
             checked={showSkeleton}
             onChange={(e) => {
               setShowSkeleton(e.target.checked);
@@ -399,9 +423,10 @@ export default function DrawingStage() {
           />
           Hand tracking view
         </label>
-        <label className="toggle">
+        <label className="switch">
           <input
             type="checkbox"
+            role="switch"
             checked={withCamera}
             onChange={(e) => {
               setWithCamera(e.target.checked);
@@ -410,15 +435,6 @@ export default function DrawingStage() {
           />
           Save with camera
         </label>
-        {running && (
-          <span className="hint">
-            {!handVisible
-              ? "Show your hand to the camera."
-              : drawing
-              ? "Drawing"
-              : "Pinch your thumb and index finger to draw."}
-          </span>
-        )}
       </div>
     </section>
   );

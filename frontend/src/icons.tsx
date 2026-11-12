@@ -34,3 +34,49 @@ export function MoonIcon() {
     </Icon>
   );
 }
+
+export function UndoIcon() {
+  return (
+    <Icon>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+    </Icon>
+  );
+}
+
+export function TrashIcon() {
+  return (
+    <Icon>
+      <path d="M3 6h18" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </Icon>
+  );
+}
+
+export function DownloadIcon() {
+  return (
+    <Icon>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M12 15V3" />
+    </Icon>
+  );
+}
+
+export function CameraIcon() {
+  return (
+    <Icon>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </Icon>
+  );
+}
+
+export function StopIcon() {
+  return (
+    <Icon>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </Icon>
+  );
+}

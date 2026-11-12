@@ -1,0 +1,107 @@
+/* Buttons with icons and key hints, switches and dividers. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.button svg {
+  flex: none;
+  transition: transform 0.45s var(--spring);
+}
+
+.button:hover:not(:disabled) svg {
+  transform: translateY(-1px) scale(1.14);
+}
+
+.button kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.button-solid kbd {
+  color: inherit;
+}
+
+.theme-toggle {
+  justify-content: center;
+  padding: 0;
+}
+
+.divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--btn-border);
+}
+
+.hint {
+  margin-left: auto;
+}
+
+.size {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  accent-color: var(--ink);
+}
+
+/* Toggle switch with a springy knob. */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  border: 1px solid var(--btn-border);
+  border-radius: 999px;
+  background: var(--btn);
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.45s var(--spring);
+}
+
+.switch input:checked {
+  background: var(--ink);
+}
+
+.switch input:checked::after {
+  background: var(--bg);
+  transform: translateX(16px);
+}
+
+.switch input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

@@ -38,7 +38,7 @@
 }
 
 /* Pen size slider. */
-.toggle input[type="range"] {
+.size input[type="range"] {
   width: 90px;
 }
 
