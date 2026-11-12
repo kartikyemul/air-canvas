@@ -23,6 +23,17 @@ const COLORS = [
 ];
 const PEN_WIDTH = 6;
 
+// A fist: every fingertip is pulled in closer to the wrist than its knuckle.
+const FINGERS = [
+  [8, 5],
+  [12, 9],
+  [16, 13],
+  [20, 17],
+];
+const PALM = [0, 5, 9, 13, 17];
+const FOLD_LIMIT = 1;
+const ERASER_SIZE = 0.7;
+
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
@@ -49,6 +60,7 @@ export default function DrawingStage() {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const showSkeletonRef = useRef(true);
   const cursorRef = useRef<HTMLDivElement>(null);
+  const eraserRef = useRef<HTMLDivElement>(null);
   const trackerRef = useRef<HandLandmarker | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
@@ -62,6 +74,7 @@ export default function DrawingStage() {
   const [error, setError] = useState("");
   const [aspect, setAspect] = useState("4 / 3");
   const [drawing, setDrawing] = useState(false);
+  const [erasing, setErasing] = useState(false);
   const [handVisible, setHandVisible] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [color, setColor] = useState(COLORS[0].value);
@@ -113,6 +126,8 @@ export default function DrawingStage() {
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     if (cursorRef.current) cursorRef.current.style.display = "none";
+    if (eraserRef.current) eraserRef.current.style.display = "none";
+    setErasing(false);
     const overlay = overlayRef.current;
     overlay?.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
     setDrawing(false);
@@ -127,6 +142,7 @@ export default function DrawingStage() {
     const tracker = trackerRef.current;
     if (!video || !canvas || !cursor || !tracker) return;
 
+    const eraser = eraserRef.current!;
     const overlay = overlayRef.current!;
     const overlayCtx = overlay.getContext("2d")!;
     const utils = new DrawingUtils(overlayCtx);
@@ -138,6 +154,7 @@ export default function DrawingStage() {
     let smooth: Point | null = null;
     let wasDrawing = false;
     let wasVisible = false;
+    let wasErasing = false;
 
     const tick = () => {
       frameRef.current = requestAnimationFrame(tick);
@@ -154,6 +171,11 @@ export default function DrawingStage() {
           setHandVisible(false);
         }
         cursor.style.display = "none";
+        eraser.style.display = "none";
+        if (wasErasing) {
+          wasErasing = false;
+          setErasing(false);
+        }
         endStroke();
         lastPoint = null;
         smooth = null;
@@ -185,7 +207,11 @@ export default function DrawingStage() {
       const thumb = hand[THUMB_TIP];
       const index = hand[INDEX_TIP];
       const handSize = distance(hand[WRIST], hand[MIDDLE_KNUCKLE]);
-      const pinching = distance(thumb, index) / handSize < PINCH_RATIO;
+      const fist = FINGERS.every(
+        ([tip, knuckle]) =>
+          distance(hand[tip], hand[WRIST]) < distance(hand[knuckle], hand[WRIST]) * FOLD_LIMIT
+      );
+      const pinching = !fist && distance(thumb, index) / handSize < PINCH_RATIO;
 
       const raw = {
         x: ((thumb.x + index.x) / 2) * canvas.width,
@@ -199,7 +225,7 @@ export default function DrawingStage() {
         : raw;
 
       // The camera view is mirrored, so the cursor is flipped to match.
-      cursor.style.display = "block";
+      cursor.style.display = fist ? "none" : "block";
       cursor.style.left = `${(1 - smooth.x / canvas.width) * 100}%`;
       cursor.style.top = `${(smooth.y / canvas.height) * 100}%`;
       cursor.classList.toggle("cursor-down", pinching);
@@ -217,6 +243,24 @@ export default function DrawingStage() {
       } else {
         endStroke();
         lastPoint = null;
+      }
+
+      if (fist) {
+        const palmX = PALM.reduce((sum, i) => sum + hand[i].x, 0) / PALM.length;
+        const palmY = PALM.reduce((sum, i) => sum + hand[i].y, 0) / PALM.length;
+        const radius = handSize * canvas.width * ERASER_SIZE;
+        eraseAt(palmX * canvas.width, palmY * canvas.height, radius);
+        eraser.style.display = "block";
+        eraser.style.left = `${(1 - palmX) * 100}%`;
+        eraser.style.top = `${palmY * 100}%`;
+        eraser.style.width = `${((radius * 2) / canvas.width) * 100}%`;
+      } else {
+        eraser.style.display = "none";
+      }
+
+      if (fist !== wasErasing) {
+        wasErasing = fist;
+        setErasing(fist);
       }
 
       if (pinching !== wasDrawing) {
@@ -245,6 +289,28 @@ export default function DrawingStage() {
   function pickColor(value: string) {
     setColor(value);
     colorRef.current = value;
+  }
+
+  function eraseAt(x: number, y: number, radius: number) {
+    const kept: Stroke[] = [];
+    let changed = false;
+    for (const stroke of strokesRef.current) {
+      let piece: Point[] = [];
+      for (const p of stroke.points) {
+        if (Math.hypot(p.x - x, p.y - y) < radius) {
+          changed = true;
+          if (piece.length > 1) kept.push({ ...stroke, points: piece });
+          piece = [];
+        } else {
+          piece.push(p);
+        }
+      }
+      if (piece.length > 1) kept.push({ ...stroke, points: piece });
+    }
+    if (changed) {
+      strokesRef.current = kept;
+      redraw();
+    }
   }
 
   function undo() {
@@ -312,6 +378,7 @@ export default function DrawingStage() {
         <canvas ref={canvasRef} className="stage-layer stage-canvas" />
         <canvas ref={overlayRef} className="stage-layer" />
         <div ref={cursorRef} className="cursor" />
+        <div ref={eraserRef} className="eraser" />
         {phase !== "running" && (
           <div className="stage-message">
             {phase === "loading"
@@ -359,9 +426,11 @@ export default function DrawingStage() {
           <span className="hint">
             {!handVisible
               ? "Show your hand to the camera."
+              : erasing
+              ? "Erasing. Open your hand to stop."
               : drawing
               ? "Drawing"
-              : "Pinch your thumb and index finger to draw."}
+              : "Pinch to draw. Make a fist to erase."}
           </span>
         )}
       </div>

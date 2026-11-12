@@ -97,3 +97,16 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* Eraser ring that follows your fist. */
+.eraser {
+  display: none;
+  position: absolute;
+  aspect-ratio: 1;
+  border: 1.5px dashed #fff;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
