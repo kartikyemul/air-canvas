@@ -370,8 +370,11 @@ export default function DrawingStage() {
             />
           </label>
         </div>
-        <label className="toggle">
+        <label className="toggle size">
           Size
+          <span className="pen-slot">
+            <span className="pen-preview" style={{ width, height: width, background: color }} />
+          </span>
           <input
             type="range"
             min={2}
@@ -383,6 +386,7 @@ export default function DrawingStage() {
               widthRef.current = next;
             }}
           />
+          <output className="size-value">{width}</output>
         </label>
         <label className="toggle">
           <input

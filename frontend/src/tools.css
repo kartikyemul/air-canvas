@@ -73,3 +73,27 @@
   opacity: 0;
   cursor: pointer;
 }
+
+/* Pen size: a live dot shows the colour and thickness. */
+.size {
+  gap: 10px;
+}
+
+.pen-slot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.pen-preview {
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--btn-border);
+}
+
+.size-value {
+  min-width: 1.5em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
