@@ -57,3 +57,19 @@
   height: 40px;
   padding: 0;
 }
+
+/* Custom ink color: a colour wheel until you pick one. */
+.swatch-custom {
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(#ff5a4d, #ffd84d, #c8ff3d, #00e5ff, #6a5cff, #ff4dd8, #ff5a4d);
+}
+
+.swatch-custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}

@@ -4,6 +4,7 @@ import { createHandTracker } from "./handTracker";
 
 type Point = { x: number; y: number };
 type Phase = "idle" | "loading" | "running" | "error";
+type Stroke = { color: string; width: number; points: Point[] };
 
 const THUMB_TIP = 4;
 const INDEX_TIP = 8;
@@ -13,9 +14,32 @@ const MIDDLE_KNUCKLE = 9;
 // Pinching thumb and index finger together draws.
 const PINCH_RATIO = 0.3;
 const SMOOTHING = 0.5;
+const COLORS = [
+  { name: "Cyan", value: "#00e5ff" },
+  { name: "White", value: "#ffffff" },
+  { name: "Coral", value: "#ff5a4d" },
+  { name: "Lime", value: "#c8ff3d" },
+];
+const PEN_WIDTH = 6;
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function drawSegment(ctx: CanvasRenderingContext2D, stroke: Stroke, from: Point, to: Point) {
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.width;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
+}
+
+function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
+  for (let i = 1; i < stroke.points.length; i++) {
+    drawSegment(ctx, stroke, stroke.points[i - 1], stroke.points[i]);
+  }
 }
 
 export default function DrawingStage() {
@@ -27,6 +51,11 @@ export default function DrawingStage() {
   const trackerRef = useRef<HandLandmarker | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
+  const strokesRef = useRef<Stroke[]>([]);
+  const currentRef = useRef<Stroke | null>(null);
+  const colorRef = useRef(COLORS[0].value);
+  const widthRef = useRef(PEN_WIDTH);
+  const withCameraRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
@@ -34,6 +63,9 @@ export default function DrawingStage() {
   const [drawing, setDrawing] = useState(false);
   const [handVisible, setHandVisible] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [color, setColor] = useState(COLORS[0].value);
+  const [width, setWidth] = useState(PEN_WIDTH);
+  const [withCamera, setWithCamera] = useState(false);
 
   async function start() {
     setPhase("loading");
@@ -75,6 +107,7 @@ export default function DrawingStage() {
 
   function stop() {
     cancelAnimationFrame(frameRef.current);
+    endStroke();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -98,10 +131,6 @@ export default function DrawingStage() {
     const utils = new DrawingUtils(overlayCtx);
 
     const ctx = canvas.getContext("2d")!;
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#00e5ff";
 
     let lastTime = -1;
     let lastPoint: Point | null = null;
@@ -124,6 +153,7 @@ export default function DrawingStage() {
           setHandVisible(false);
         }
         cursor.style.display = "none";
+        endStroke();
         lastPoint = null;
         smooth = null;
         if (wasDrawing) {
@@ -174,14 +204,17 @@ export default function DrawingStage() {
       cursor.classList.toggle("cursor-down", pinching);
 
       if (pinching) {
-        if (lastPoint) {
-          ctx.beginPath();
-          ctx.moveTo(lastPoint.x, lastPoint.y);
-          ctx.lineTo(smooth.x, smooth.y);
-          ctx.stroke();
+        let stroke = currentRef.current;
+        if (!stroke) {
+          stroke = { color: colorRef.current, width: widthRef.current, points: [] };
+          currentRef.current = stroke;
+          lastPoint = null;
         }
+        if (lastPoint) drawSegment(ctx, stroke, lastPoint, smooth);
+        stroke.points.push({ ...smooth });
         lastPoint = { ...smooth };
       } else {
+        endStroke();
         lastPoint = null;
       }
 
@@ -194,9 +227,35 @@ export default function DrawingStage() {
     tick();
   }
 
-  function clear() {
+  function endStroke() {
+    const stroke = currentRef.current;
+    if (stroke && stroke.points.length > 1) strokesRef.current.push(stroke);
+    currentRef.current = null;
+  }
+
+  function redraw() {
     const canvas = canvasRef.current;
-    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    strokesRef.current.forEach((s) => drawStroke(ctx, s));
+  }
+
+  function pickColor(value: string) {
+    setColor(value);
+    colorRef.current = value;
+  }
+
+  function undo() {
+    endStroke();
+    strokesRef.current.pop();
+    redraw();
+  }
+
+  function clear() {
+    endStroke();
+    strokesRef.current = [];
+    redraw();
   }
 
   function save() {
@@ -211,9 +270,14 @@ export default function DrawingStage() {
     // Flip so the saved image matches what you saw on screen.
     ctx.translate(out.width, 0);
     ctx.scale(-1, 1);
+    const video = videoRef.current;
+    if (withCameraRef.current && video && video.videoWidth) {
+      ctx.drawImage(video, 0, 0, out.width, out.height);
+    }
     ctx.drawImage(canvas, 0, 0);
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const link = document.createElement("a");
-    link.download = "aircanvas.png";
+    link.download = `aircanvas-${stamp}.png`;
     link.href = out.toDataURL("image/png");
     link.click();
   }
@@ -221,6 +285,7 @@ export default function DrawingStage() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "z") undo();
       if (e.key === "c") clear();
       if (e.key === "s") save();
     }
@@ -237,6 +302,7 @@ export default function DrawingStage() {
   }, []);
 
   const running = phase === "running";
+  const isCustom = !COLORS.some((c) => c.value === color);
 
   return (
     <section>
@@ -270,12 +336,54 @@ export default function DrawingStage() {
             Start camera
           </button>
         )}
+        <button className="button" onClick={undo}>
+          Undo (Z)
+        </button>
         <button className="button" onClick={clear}>
           Clear (C)
         </button>
         <button className="button" onClick={save}>
           Save PNG (S)
         </button>
+        <div className="swatches" role="group" aria-label="Pen color">
+          {COLORS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              className={`swatch${color === c.value ? " swatch-on" : ""}`}
+              style={{ background: c.value }}
+              aria-label={c.name}
+              aria-pressed={color === c.value}
+              onClick={() => pickColor(c.value)}
+            />
+          ))}
+          <label
+            className={`swatch swatch-custom${isCustom ? " swatch-on" : ""}`}
+            style={isCustom ? { background: color } : undefined}
+            title="Custom color"
+          >
+            <input
+              type="color"
+              value={color}
+              aria-label="Custom color"
+              onChange={(e) => pickColor(e.target.value)}
+            />
+          </label>
+        </div>
+        <label className="toggle">
+          Size
+          <input
+            type="range"
+            min={2}
+            max={16}
+            value={width}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setWidth(next);
+              widthRef.current = next;
+            }}
+          />
+        </label>
         <label className="toggle">
           <input
             type="checkbox"
@@ -286,6 +394,17 @@ export default function DrawingStage() {
             }}
           />
           Hand tracking view
+        </label>
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={withCamera}
+            onChange={(e) => {
+              setWithCamera(e.target.checked);
+              withCameraRef.current = e.target.checked;
+            }}
+          />
+          Save with camera
         </label>
         {running && (
           <span className="hint">
