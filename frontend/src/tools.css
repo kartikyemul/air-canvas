@@ -1,0 +1,59 @@
+/* Pen colour swatches. */
+.swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--swatch-edge);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    transform 0.45s var(--spring),
+    box-shadow 0.2s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.18);
+}
+
+.swatch:active {
+  transform: scale(0.9);
+}
+
+.swatch:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.swatch-on {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--ink);
+}
+
+/* Pen size slider. */
+.toggle input[type="range"] {
+  width: 90px;
+}
+
+/* Light and dark mode toggle, top right of the page. */
+.page {
+  position: relative;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}

@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
 import DrawingStage from "./DrawingStage";
+import { MoonIcon, SunIcon } from "./icons";
 
 type Status = "checking" | "online" | "offline";
+type Theme = "dark" | "light";
 
 export default function App() {
   const [status, setStatus] = useState<Status>("checking");
+  const [theme, setTheme] = useState<Theme>(
+    document.documentElement.dataset.theme === "light" ? "light" : "dark"
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("aircanvas-theme", theme);
+  }, [theme]);
 
   async function checkBackend() {
     setStatus("checking");
@@ -51,6 +61,14 @@ export default function App() {
           Check again
         </button>
       </div>
+      <button
+        className="button theme-toggle"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        title={theme === "dark" ? "Light mode" : "Dark mode"}
+      >
+        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+      </button>
     </main>
   );
 }

@@ -5,7 +5,49 @@
   --line: rgba(236, 233, 227, 0.18);
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+
+  --glass-a: rgba(255, 255, 255, 0.11);
+  --glass-b: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --hi: rgba(255, 255, 255, 0.28);
+  --lo: rgba(0, 0, 0, 0.35);
+  --drop: rgba(0, 0, 0, 0.8);
+  --btn: rgba(255, 255, 255, 0.07);
+  --btn-border: rgba(255, 255, 255, 0.22);
+  --btn-hover: rgba(255, 255, 255, 0.16);
+  --solid: rgba(236, 233, 227, 0.92);
+  --solid-hover: #ffffff;
+  --swatch-edge: rgba(255, 255, 255, 0.45);
+  --blob-a: rgba(255, 255, 255, 0.11);
+  --blob-b: rgba(255, 255, 255, 0.08);
+  --blob-c: rgba(255, 255, 255, 0.05);
+  --grain: 0.06;
   color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #eeece7;
+  --ink: #121211;
+  --muted: #6c6a65;
+  --line: rgba(18, 18, 17, 0.18);
+
+  --glass-a: rgba(255, 255, 255, 0.72);
+  --glass-b: rgba(255, 255, 255, 0.34);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --hi: rgba(255, 255, 255, 0.95);
+  --lo: rgba(0, 0, 0, 0.07);
+  --drop: rgba(60, 50, 30, 0.3);
+  --btn: rgba(255, 255, 255, 0.55);
+  --btn-border: rgba(18, 18, 17, 0.16);
+  --btn-hover: rgba(255, 255, 255, 0.95);
+  --solid: #121211;
+  --solid-hover: #000000;
+  --swatch-edge: rgba(18, 18, 17, 0.3);
+  --blob-a: rgba(255, 255, 255, 0.95);
+  --blob-b: rgba(0, 0, 0, 0.05);
+  --blob-c: rgba(255, 255, 255, 0.6);
+  --grain: 0.035;
+  color-scheme: light;
 }
 
 * {
