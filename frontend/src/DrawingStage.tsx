@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DrawingUtils, HandLandmarker } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
-import { CameraIcon, DownloadIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
+import { CameraIcon, DownloadIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
 type Point = { x: number; y: number };
 type Phase = "idle" | "loading" | "running" | "error";
@@ -75,6 +75,7 @@ export default function DrawingStage() {
   const frameRef = useRef(0);
   const strokesRef = useRef<Stroke[]>([]);
   const currentRef = useRef<Stroke | null>(null);
+  const redoRef = useRef<Stroke[]>([]);
   const colorRef = useRef(COLORS[0].value);
   const widthRef = useRef(PEN_WIDTH);
   const withCameraRef = useRef(false);
@@ -314,7 +315,10 @@ export default function DrawingStage() {
 
   function endStroke() {
     const stroke = currentRef.current;
-    if (stroke && stroke.points.length > 1) strokesRef.current.push(stroke);
+    if (stroke && stroke.points.length > 1) {
+      strokesRef.current.push(stroke);
+      redoRef.current = [];
+    }
     currentRef.current = null;
   }
 
@@ -352,19 +356,31 @@ export default function DrawingStage() {
     }
     if (changed) {
       strokesRef.current = kept;
+      redoRef.current = [];
       redraw();
     }
   }
 
   function undo() {
     endStroke();
-    strokesRef.current.pop();
+    const last = strokesRef.current.pop();
+    if (last) redoRef.current.push(last);
     redraw();
+  }
+
+  function redo() {
+    endStroke();
+    const next = redoRef.current.pop();
+    if (next) {
+      strokesRef.current.push(next);
+      redraw();
+    }
   }
 
   function clear() {
     endStroke();
     strokesRef.current = [];
+    redoRef.current = [];
     redraw();
   }
 
@@ -397,6 +413,7 @@ export default function DrawingStage() {
     function onKey(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "z") undo();
+      if (e.key === "Z" || e.key === "y") redo();
       if (e.key === "c") clear();
       if (e.key === "s") save();
     }
@@ -482,6 +499,11 @@ export default function DrawingStage() {
           <UndoIcon />
           Undo
           <kbd>Z</kbd>
+        </button>
+        <button className="button" onClick={redo}>
+          <RedoIcon />
+          Redo
+          <kbd>Y</kbd>
         </button>
         <button className="button" onClick={clear}>
           <TrashIcon />
