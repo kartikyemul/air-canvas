@@ -186,3 +186,21 @@
     transform: translate(-50%, -6px);
   }
 }
+
+.stage-bar .button {
+  margin-left: auto;
+}
+
+/* Fullscreen keeps the chosen shape, centered on the screen. */
+.stage-wrap:fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.stage-wrap:fullscreen .stage {
+  width: min(100vw, calc(100vh * var(--ratio)));
+  border: 0;
+  border-radius: 0;
+}

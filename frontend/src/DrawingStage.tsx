@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DrawingUtils, HandLandmarker } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
-import { CameraIcon, DownloadIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
+import { CameraIcon, DownloadIcon, ExpandIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
 type Point = { x: number; y: number };
 type Phase = "idle" | "loading" | "running" | "error";
@@ -68,6 +68,7 @@ export default function DrawingStage() {
   const showSkeletonRef = useRef(true);
   const cursorRef = useRef<HTMLDivElement>(null);
   const eraserRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const cropRef = useRef<Crop | null>(null);
   const ratioRef = useRef(RATIOS[0].value);
   const trackerRef = useRef<HandLandmarker | null>(null);
@@ -113,6 +114,11 @@ export default function DrawingStage() {
     overlay.height = ch;
     canvas.getContext("2d")!.setTransform(1, 0, 0, 1, -offX, -offY);
     redraw();
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else wrapRef.current?.requestFullscreen().catch(() => {});
   }
 
   function pickRatio(value: number) {
@@ -416,6 +422,7 @@ export default function DrawingStage() {
       if (e.key === "Z" || e.key === "y") redo();
       if (e.key === "c") clear();
       if (e.key === "s") save();
+      if (e.key === "f") toggleFullscreen();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -454,28 +461,38 @@ export default function DrawingStage() {
             </button>
           ))}
         </div>
+        <button className="button" onClick={toggleFullscreen}>
+          <ExpandIcon />
+          Fullscreen
+          <kbd>F</kbd>
+        </button>
       </div>
 
-      <div className="stage" style={{ aspectRatio: `${ratio}` }}>
-        <video ref={videoRef} className="stage-layer stage-video" playsInline muted />
-        <canvas ref={canvasRef} className="stage-layer stage-canvas" />
-        <canvas ref={overlayRef} className="stage-layer" />
-        <div ref={cursorRef} className="cursor" />
-        <div ref={eraserRef} className="eraser" />
-        {running && (
-          <div key={hintText} className="stage-hint" role="status">
-            {hintText}
-          </div>
-        )}
-        {phase !== "running" && (
-          <div className="stage-message">
-            {phase === "loading"
-              ? "Starting camera and loading hand tracking..."
-              : phase === "error"
-              ? error
-              : "Turn on your camera to start drawing."}
-          </div>
-        )}
+      <div ref={wrapRef} className="stage-wrap">
+        <div
+          className="stage"
+          style={{ aspectRatio: `${ratio}`, "--ratio": ratio } as CSSProperties}
+        >
+          <video ref={videoRef} className="stage-layer stage-video" playsInline muted />
+          <canvas ref={canvasRef} className="stage-layer stage-canvas" />
+          <canvas ref={overlayRef} className="stage-layer" />
+          <div ref={cursorRef} className="cursor" />
+          <div ref={eraserRef} className="eraser" />
+          {running && (
+            <div key={hintText} className="stage-hint" role="status">
+              {hintText}
+            </div>
+          )}
+          {phase !== "running" && (
+            <div className="stage-message">
+              {phase === "loading"
+                ? "Starting camera and loading hand tracking..."
+                : phase === "error"
+                ? error
+                : "Turn on your camera to start drawing."}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="toolbar">
