@@ -414,6 +414,13 @@ export default function DrawingStage() {
 
   const running = phase === "running";
   const isCustom = !COLORS.some((c) => c.value === color);
+  const hintText = !handVisible
+    ? "Show your hand to the camera"
+    : erasing
+    ? "Erasing. Open your hand to stop."
+    : drawing
+    ? "Drawing"
+    : "Pinch to draw. Make a fist to erase.";
 
   return (
     <section>
@@ -438,6 +445,11 @@ export default function DrawingStage() {
         <canvas ref={overlayRef} className="stage-layer" />
         <div ref={cursorRef} className="cursor" />
         <div ref={eraserRef} className="eraser" />
+        {running && (
+          <div key={hintText} className="stage-hint" role="status">
+            {hintText}
+          </div>
+        )}
         {phase !== "running" && (
           <div className="stage-message">
             {phase === "loading"
@@ -481,17 +493,6 @@ export default function DrawingStage() {
           Save
           <kbd>S</kbd>
         </button>
-        {running && (
-          <span className="hint">
-            {!handVisible
-              ? "Show your hand to the camera."
-              : erasing
-              ? "Erasing. Open your hand to stop."
-              : drawing
-              ? "Drawing"
-              : "Pinch to draw. Make a fist to erase."}
-          </span>
-        )}
       </div>
 
       <div className="toolbar">

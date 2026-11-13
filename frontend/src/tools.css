@@ -160,3 +160,29 @@
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+
+/* Instruction chip at the top of the video. */
+.stage-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 1;
+  max-width: calc(100% - 28px);
+  padding: 7px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: hint-in 0.35s ease both;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
