@@ -110,3 +110,53 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
+
+/* Camera frame: crop the video to the chosen shape. */
+.stage-video {
+  object-fit: cover;
+}
+
+.stage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--btn-border);
+  border-radius: 999px;
+  background: var(--btn);
+}
+
+.segmented button {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.45s var(--spring);
+}
+
+.segmented button:active {
+  transform: scale(0.92);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}

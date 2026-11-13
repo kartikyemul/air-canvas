@@ -6,6 +6,7 @@ import { CameraIcon, DownloadIcon, StopIcon, TrashIcon, UndoIcon } from "./icons
 type Point = { x: number; y: number };
 type Phase = "idle" | "loading" | "running" | "error";
 type Stroke = { color: string; width: number; points: Point[] };
+type Crop = { vw: number; vh: number; cw: number; ch: number; offX: number; offY: number };
 
 const THUMB_TIP = 4;
 const INDEX_TIP = 8;
@@ -31,6 +32,12 @@ const FINGERS = [
   [20, 17],
 ];
 const PALM = [0, 5, 9, 13, 17];
+const RATIOS = [
+  { label: "4:3", value: 4 / 3 },
+  { label: "16:9", value: 16 / 9 },
+  { label: "2:1", value: 2 },
+  { label: "Cinemascope", value: 2.39 },
+];
 const FOLD_LIMIT = 1;
 const ERASER_SIZE = 0.7;
 
@@ -61,6 +68,8 @@ export default function DrawingStage() {
   const showSkeletonRef = useRef(true);
   const cursorRef = useRef<HTMLDivElement>(null);
   const eraserRef = useRef<HTMLDivElement>(null);
+  const cropRef = useRef<Crop | null>(null);
+  const ratioRef = useRef(RATIOS[0].value);
   const trackerRef = useRef<HandLandmarker | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
@@ -72,7 +81,7 @@ export default function DrawingStage() {
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
-  const [aspect, setAspect] = useState("4 / 3");
+  const [ratio, setRatio] = useState(RATIOS[0].value);
   const [drawing, setDrawing] = useState(false);
   const [erasing, setErasing] = useState(false);
   const [handVisible, setHandVisible] = useState(false);
@@ -81,12 +90,42 @@ export default function DrawingStage() {
   const [width, setWidth] = useState(PEN_WIDTH);
   const [withCamera, setWithCamera] = useState(false);
 
+  // The canvas covers a centered crop of the camera frame. Strokes are stored in
+  // full-frame pixels, so changing the ratio keeps them attached to the video.
+  function applyCrop(value: number) {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const overlay = overlayRef.current;
+    if (!video || !canvas || !overlay || !video.videoWidth) return;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    let cw = vw;
+    let ch = vh;
+    if (value > vw / vh) ch = Math.round(vw / value);
+    else cw = Math.round(vh * value);
+    const offX = Math.round((vw - cw) / 2);
+    const offY = Math.round((vh - ch) / 2);
+    cropRef.current = { vw, vh, cw, ch, offX, offY };
+    canvas.width = cw;
+    canvas.height = ch;
+    overlay.width = cw;
+    overlay.height = ch;
+    canvas.getContext("2d")!.setTransform(1, 0, 0, 1, -offX, -offY);
+    redraw();
+  }
+
+  function pickRatio(value: number) {
+    setRatio(value);
+    ratioRef.current = value;
+    applyCrop(value);
+  }
+
   async function start() {
     setPhase("loading");
     setError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
 
@@ -94,13 +133,7 @@ export default function DrawingStage() {
       video.srcObject = stream;
       await video.play();
 
-      const canvas = canvasRef.current!;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const overlay = overlayRef.current!;
-      overlay.width = video.videoWidth;
-      overlay.height = video.videoHeight;
-      setAspect(`${video.videoWidth} / ${video.videoHeight}`);
+      applyCrop(ratioRef.current);
 
       if (!trackerRef.current) {
         trackerRef.current = await createHandTracker();
@@ -160,6 +193,8 @@ export default function DrawingStage() {
       frameRef.current = requestAnimationFrame(tick);
       if (video.readyState < 2 || video.currentTime === lastTime) return;
       lastTime = video.currentTime;
+      const crop = cropRef.current;
+      if (!crop) return;
 
       const hand = tracker.detectForVideo(video, performance.now()).landmarks[0];
 
@@ -192,11 +227,16 @@ export default function DrawingStage() {
       }
 
       if (showSkeletonRef.current) {
-        utils.drawConnectors(hand, HandLandmarker.HAND_CONNECTIONS, {
+        const shown = hand.map((l) => ({
+          ...l,
+          x: (l.x * crop.vw - crop.offX) / crop.cw,
+          y: (l.y * crop.vh - crop.offY) / crop.ch,
+        }));
+        utils.drawConnectors(shown, HandLandmarker.HAND_CONNECTIONS, {
           color: "#ffffff",
           lineWidth: 2,
         });
-        utils.drawLandmarks(hand, {
+        utils.drawLandmarks(shown, {
           color: "#000000",
           fillColor: "#ffffff",
           lineWidth: 1,
@@ -214,8 +254,8 @@ export default function DrawingStage() {
       const pinching = !fist && distance(thumb, index) / handSize < PINCH_RATIO;
 
       const raw = {
-        x: ((thumb.x + index.x) / 2) * canvas.width,
-        y: ((thumb.y + index.y) / 2) * canvas.height,
+        x: ((thumb.x + index.x) / 2) * crop.vw,
+        y: ((thumb.y + index.y) / 2) * crop.vh,
       };
       smooth = smooth
         ? {
@@ -226,8 +266,8 @@ export default function DrawingStage() {
 
       // The camera view is mirrored, so the cursor is flipped to match.
       cursor.style.display = fist ? "none" : "block";
-      cursor.style.left = `${(1 - smooth.x / canvas.width) * 100}%`;
-      cursor.style.top = `${(smooth.y / canvas.height) * 100}%`;
+      cursor.style.left = `${(1 - (smooth.x - crop.offX) / crop.cw) * 100}%`;
+      cursor.style.top = `${((smooth.y - crop.offY) / crop.ch) * 100}%`;
       cursor.classList.toggle("cursor-down", pinching);
 
       if (pinching) {
@@ -246,14 +286,14 @@ export default function DrawingStage() {
       }
 
       if (fist) {
-        const palmX = PALM.reduce((sum, i) => sum + hand[i].x, 0) / PALM.length;
-        const palmY = PALM.reduce((sum, i) => sum + hand[i].y, 0) / PALM.length;
-        const radius = handSize * canvas.width * ERASER_SIZE;
-        eraseAt(palmX * canvas.width, palmY * canvas.height, radius);
+        const palmX = (PALM.reduce((sum, i) => sum + hand[i].x, 0) / PALM.length) * crop.vw;
+        const palmY = (PALM.reduce((sum, i) => sum + hand[i].y, 0) / PALM.length) * crop.vh;
+        const radius = handSize * crop.vw * ERASER_SIZE;
+        eraseAt(palmX, palmY, radius);
         eraser.style.display = "block";
-        eraser.style.left = `${(1 - palmX) * 100}%`;
-        eraser.style.top = `${palmY * 100}%`;
-        eraser.style.width = `${((radius * 2) / canvas.width) * 100}%`;
+        eraser.style.left = `${(1 - (palmX - crop.offX) / crop.cw) * 100}%`;
+        eraser.style.top = `${((palmY - crop.offY) / crop.ch) * 100}%`;
+        eraser.style.width = `${((radius * 2) / crop.cw) * 100}%`;
       } else {
         eraser.style.display = "none";
       }
@@ -282,7 +322,10 @@ export default function DrawingStage() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     strokesRef.current.forEach((s) => drawStroke(ctx, s));
   }
 
@@ -338,8 +381,9 @@ export default function DrawingStage() {
     ctx.translate(out.width, 0);
     ctx.scale(-1, 1);
     const video = videoRef.current;
-    if (withCameraRef.current && video && video.videoWidth) {
-      ctx.drawImage(video, 0, 0, out.width, out.height);
+    const crop = cropRef.current;
+    if (withCameraRef.current && video && video.videoWidth && crop) {
+      ctx.drawImage(video, crop.offX, crop.offY, crop.cw, crop.ch, 0, 0, out.width, out.height);
     }
     ctx.drawImage(canvas, 0, 0);
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -373,7 +417,22 @@ export default function DrawingStage() {
 
   return (
     <section>
-      <div className="stage" style={{ aspectRatio: aspect }}>
+      <div className="stage-bar">
+        <div className="segmented" role="group" aria-label="Camera aspect ratio">
+          {RATIOS.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              aria-pressed={ratio === r.value}
+              onClick={() => pickRatio(r.value)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="stage" style={{ aspectRatio: `${ratio}` }}>
         <video ref={videoRef} className="stage-layer stage-video" playsInline muted />
         <canvas ref={canvasRef} className="stage-layer stage-canvas" />
         <canvas ref={overlayRef} className="stage-layer" />
