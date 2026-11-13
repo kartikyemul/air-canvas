@@ -5,13 +5,15 @@ Draw in the air with your webcam. AirCanvas tracks your hand in the browser and 
 ## Features
 
 - Live webcam view with hand tracking drawn over it (21 points and joints), which you can switch off
+- Choose the frame shape: 4:3, 16:9, 2:1 or Cinemascope (2.39:1), with a fullscreen mode
+- A hint chip at the top of the video tells you what to do next
 - Pinch your thumb and index finger together to draw, open them to lift the pen
 - Smoothed lines, a cursor that squishes when you pinch, and a hint when no hand is visible
-- Undo your last stroke, or clear the whole canvas
+- Undo, redo or clear your strokes
 - Make a fist to erase: a ring follows your hand and rubs out the lines it touches
 - Four preset ink colors plus a custom color picker, and a pen size with a live preview
 - Save your drawing as a PNG, with or without the camera view
-- Keyboard shortcuts: `Z` undo, `C` clear, `S` save
+- Keyboard shortcuts: `Z` undo, `Y` redo, `C` clear, `S` save, `F` fullscreen
 - Backend status check against a small FastAPI server
 - Icon buttons with key hints and springy switches
 - Dark and light modes (toggle in the top right, remembered next time) with a serif title, frosted glass panels, softly drifting light and spring animations. Animations turn off automatically if your system asks for reduced motion
@@ -86,12 +88,14 @@ Open http://localhost:5173.
 5. Pick an ink color (or your own) and a pen size in the toolbar.
 6. Press `Z` to undo, `C` to clear or `S` to save. Turn on **Save with camera** to include the video in the image.
 7. Use the sun or moon button in the top right to switch between light and dark mode.
+8. Pick a frame shape above the video, and press `F` for fullscreen (`Esc` to leave).
 
 ## How it works
 
 - Hand tracking and drawing run entirely in your browser. Your camera video is not uploaded anywhere.
 - Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
 - Pinch sensitivity is set by `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`. Line smoothing is set by `SMOOTHING` in the same file.
+- The camera is requested at up to 1280x720. The frame shape buttons crop that view, and your drawing stays attached to the video, so strokes outside the frame come back if you switch to a wider shape.
 - Fist detection uses `FOLD_LIMIT` and the eraser size uses `ERASER_SIZE`, also in that file. Erasing cannot be undone with Undo.
 
 ## Troubleshooting
