@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DrawingUtils, HandLandmarker, type GestureRecognizer } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
+import { createGestureTracker } from "./gestures";
 import { CameraIcon, DownloadIcon, ExpandIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
 type Point = { x: number; y: number };
@@ -12,6 +13,7 @@ const THUMB_TIP = 4;
 const INDEX_TIP = 8;
 const WRIST = 0;
 const MIDDLE_KNUCKLE = 9;
+const INDEX_KNUCKLE = 5;
 
 // Pinching thumb and index finger together draws.
 const PINCH_RATIO = 0.3;
@@ -24,13 +26,6 @@ const COLORS = [
 ];
 const PEN_WIDTH = 6;
 
-// A fist: every fingertip is pulled in closer to the wrist than its knuckle.
-const FINGERS = [
-  [8, 5],
-  [12, 9],
-  [16, 13],
-  [20, 17],
-];
 const PALM = [0, 5, 9, 13, 17];
 const RATIOS = [
   { label: "4:3", value: 4 / 3 },
@@ -38,7 +33,6 @@ const RATIOS = [
   { label: "2:1", value: 2 },
   { label: "Cinemascope", value: 2.39 },
 ];
-const FOLD_LIMIT = 1;
 const ERASER_SIZE = 0.7;
 
 function distance(a: Point, b: Point) {
@@ -195,6 +189,7 @@ export default function DrawingStage() {
     let wasDrawing = false;
     let wasVisible = false;
     let wasErasing = false;
+    const gestures = createGestureTracker();
 
     const tick = () => {
       frameRef.current = requestAnimationFrame(tick);
@@ -203,7 +198,8 @@ export default function DrawingStage() {
       const crop = cropRef.current;
       if (!crop) return;
 
-      const hand = tracker.recognizeForVideo(video, performance.now()).landmarks[0];
+      const result = tracker.recognizeForVideo(video, performance.now());
+      const hand = result.landmarks[0];
 
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
 
@@ -214,6 +210,7 @@ export default function DrawingStage() {
         }
         cursor.style.display = "none";
         eraser.style.display = "none";
+        gestures.reset();
         if (wasErasing) {
           wasErasing = false;
           setErasing(false);
@@ -232,6 +229,13 @@ export default function DrawingStage() {
         wasVisible = true;
         setHandVisible(true);
       }
+
+      const top = result.gestures[0]?.[0];
+      const { stable } = gestures.update(
+        top?.categoryName ?? "None",
+        top?.score ?? 0,
+        performance.now()
+      );
 
       if (showSkeletonRef.current) {
         const shown = hand.map((l) => ({
@@ -254,10 +258,10 @@ export default function DrawingStage() {
       const thumb = hand[THUMB_TIP];
       const index = hand[INDEX_TIP];
       const handSize = distance(hand[WRIST], hand[MIDDLE_KNUCKLE]);
-      const fist = FINGERS.every(
-        ([tip, knuckle]) =>
-          distance(hand[tip], hand[WRIST]) < distance(hand[knuckle], hand[WRIST]) * FOLD_LIMIT
-      );
+      // The pose comes from the recognizer. The index check keeps a pinch from counting as a fist.
+      const indexOut =
+        distance(hand[INDEX_TIP], hand[WRIST]) > distance(hand[INDEX_KNUCKLE], hand[WRIST]);
+      const fist = stable === "Closed_Fist" && !indexOut;
       const pinching = !fist && distance(thumb, index) / handSize < PINCH_RATIO;
 
       const raw = {
