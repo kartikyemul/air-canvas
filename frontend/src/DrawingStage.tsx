@@ -63,6 +63,7 @@ export default function DrawingStage() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const eraserRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const toastTimer = useRef(0);
   const cropRef = useRef<Crop | null>(null);
   const ratioRef = useRef(RATIOS[0].value);
   const trackerRef = useRef<GestureRecognizer | null>(null);
@@ -80,6 +81,7 @@ export default function DrawingStage() {
   const [ratio, setRatio] = useState(RATIOS[0].value);
   const [drawing, setDrawing] = useState(false);
   const [erasing, setErasing] = useState(false);
+  const [toast, setToast] = useState("");
   const [handVisible, setHandVisible] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [color, setColor] = useState(COLORS[0].value);
@@ -231,7 +233,7 @@ export default function DrawingStage() {
       }
 
       const top = result.gestures[0]?.[0];
-      const { stable } = gestures.update(
+      const { stable, entered } = gestures.update(
         top?.categoryName ?? "None",
         top?.score ?? 0,
         performance.now()
@@ -263,6 +265,7 @@ export default function DrawingStage() {
         distance(hand[INDEX_TIP], hand[WRIST]) > distance(hand[INDEX_KNUCKLE], hand[WRIST]);
       const fist = stable === "Closed_Fist" && !indexOut;
       const pinching = !fist && distance(thumb, index) / handSize < PINCH_RATIO;
+      if (entered && !pinching && !fist) runGesture(entered);
 
       const raw = {
         x: ((thumb.x + index.x) / 2) * crop.vw,
@@ -341,6 +344,31 @@ export default function DrawingStage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     strokesRef.current.forEach((s) => drawStroke(ctx, s));
+  }
+
+  function flash(text: string) {
+    setToast(text);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), 1400);
+  }
+
+  function nextColor() {
+    const i = COLORS.findIndex((c) => c.value === colorRef.current);
+    const next = COLORS[(i + 1) % COLORS.length];
+    pickColor(next.value);
+    flash(`Ink: ${next.name}`);
+  }
+
+  function runGesture(name: string) {
+    if (name === "Victory") {
+      nextColor();
+    } else if (name === "Thumb_Up") {
+      save();
+      flash("Saved");
+    } else if (name === "Thumb_Down") {
+      undo();
+      flash("Undo");
+    }
   }
 
   function pickColor(value: string) {
@@ -436,6 +464,7 @@ export default function DrawingStage() {
     return () => {
       cancelAnimationFrame(frameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      window.clearTimeout(toastTimer.current);
       trackerRef.current?.close();
     };
   }, []);
@@ -485,6 +514,11 @@ export default function DrawingStage() {
           {running && (
             <div key={hintText} className="stage-hint" role="status">
               {hintText}
+            </div>
+          )}
+          {toast && (
+            <div className="stage-toast" role="status">
+              {toast}
             </div>
           )}
           {phase !== "running" && (
