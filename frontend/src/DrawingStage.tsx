@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { DrawingUtils, HandLandmarker } from "@mediapipe/tasks-vision";
+import { DrawingUtils, HandLandmarker, type GestureRecognizer } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
 import { CameraIcon, DownloadIcon, ExpandIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
@@ -71,7 +71,7 @@ export default function DrawingStage() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const cropRef = useRef<Crop | null>(null);
   const ratioRef = useRef(RATIOS[0].value);
-  const trackerRef = useRef<HandLandmarker | null>(null);
+  const trackerRef = useRef<GestureRecognizer | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef(0);
   const strokesRef = useRef<Stroke[]>([]);
@@ -203,7 +203,7 @@ export default function DrawingStage() {
       const crop = cropRef.current;
       if (!crop) return;
 
-      const hand = tracker.detectForVideo(video, performance.now()).landmarks[0];
+      const hand = tracker.recognizeForVideo(video, performance.now()).landmarks[0];
 
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
 
