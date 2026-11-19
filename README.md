@@ -11,6 +11,7 @@ Draw in the air with your webcam. AirCanvas tracks your hand in the browser and 
 - Smoothed lines, a cursor that squishes when you pinch, and a hint when no hand is visible
 - Undo, redo or clear your strokes
 - Make a fist to erase: a ring follows your hand and rubs out the lines it touches
+- Gesture shortcuts from MediaPipe's Gesture Recognizer: peace sign picks the next ink color, thumbs up saves, thumbs down undoes. A switch turns them off and a guide shows what the camera sees
 - Four preset ink colors plus a custom color picker, and a pen size with a live preview
 - Save your drawing as a PNG, with or without the camera view
 - Keyboard shortcuts: `Z` undo, `Y` redo, `C` clear, `S` save, `F` fullscreen
@@ -37,7 +38,9 @@ AirCanvas/
       main.tsx           entry point, loads the stylesheets
       App.tsx            header, drawing stage, backend status
       DrawingStage.tsx   camera, tracking, strokes, undo, eraser, clear and save
-      handTracker.ts     loads the MediaPipe hand model
+      handTracker.ts     loads the MediaPipe Gesture Recognizer
+      gestures.ts        steadies gesture detection and adds a cooldown
+      GestureGuide.tsx   list of gestures and what they do
       index.css          palette (dark and light), type and layout
       backdrop.css       drifting light and grain
       glass.css          glass surfaces
@@ -89,6 +92,7 @@ Open http://localhost:5173.
 6. Press `Z` to undo, `C` to clear or `S` to save. Turn on **Save with camera** to include the video in the image.
 7. Use the sun or moon button in the top right to switch between light and dark mode.
 8. Pick a frame shape above the video, and press `F` for fullscreen (`Esc` to leave).
+9. Try the gesture shortcuts: peace sign for the next color, thumbs up to save, thumbs down to undo.
 
 ## How it works
 
@@ -96,7 +100,7 @@ Open http://localhost:5173.
 - Vite forwards any request starting with `/api` to the backend on port 8000 (see `frontend/vite.config.ts`).
 - Pinch sensitivity is set by `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`. Line smoothing is set by `SMOOTHING` in the same file.
 - The camera is requested at up to 1280x720. The frame shape buttons crop that view, and your drawing stays attached to the video, so strokes outside the frame come back if you switch to a wider shape.
-- Fist detection uses `FOLD_LIMIT` and the eraser size uses `ERASER_SIZE`, also in that file. Erasing cannot be undone with Undo.
+- Gestures come from MediaPipe's Gesture Recognizer, a small model that downloads on first use. `frontend/src/gestures.ts` accepts a gesture only after it is steady for a few frames, then waits a short cooldown. The eraser size uses `ERASER_SIZE` in `DrawingStage.tsx`. Erasing cannot be undone with Undo.
 
 ## Troubleshooting
 
@@ -104,5 +108,5 @@ Open http://localhost:5173.
 - **Stuck on loading:** the hand model downloads on first use, so check your internet connection.
 - **"Backend not reachable":** start the FastAPI server in the `backend` folder, then click Check again.
 - **Drawing is hard to trigger:** change `PINCH_RATIO` in `frontend/src/DrawingStage.tsx`.
-- **The eraser triggers while drawing, or never triggers:** adjust `FOLD_LIMIT` in `frontend/src/DrawingStage.tsx` (lower needs a tighter fist) and keep your whole hand in view.
+- **A gesture is not recognized:** use good light, keep your whole hand in view and hold the pose for about half a second. The tuning numbers are at the top of `frontend/src/gestures.ts`. The "Seeing" label under the toolbars shows what the camera thinks you are doing.
 - **`activate` is blocked in PowerShell:** run `Set-ExecutionPolicy -Scope Process Bypass`, then try again.
