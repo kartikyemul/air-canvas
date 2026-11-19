@@ -228,3 +228,40 @@
     transform: translate(-50%, 10px) scale(0.9);
   }
 }
+
+/* Gesture cheat sheet under the toolbars. */
+.guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  margin-top: 16px;
+  padding: 14px 20px;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  background: linear-gradient(140deg, var(--glass-a), var(--glass-b));
+  font-size: 0.9rem;
+}
+
+.guide-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-name {
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.guide-does,
+.guide-seen {
+  color: var(--muted);
+}
+
+.guide-seen {
+  margin: 0 0 0 auto;
+}

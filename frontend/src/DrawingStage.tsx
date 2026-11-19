@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DrawingUtils, HandLandmarker, type GestureRecognizer } from "@mediapipe/tasks-vision";
 import { createHandTracker } from "./handTracker";
 import { createGestureTracker } from "./gestures";
+import GestureGuide from "./GestureGuide";
 import { CameraIcon, DownloadIcon, ExpandIcon, RedoIcon, StopIcon, TrashIcon, UndoIcon } from "./icons";
 
 type Point = { x: number; y: number };
@@ -64,6 +65,7 @@ export default function DrawingStage() {
   const eraserRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef(0);
+  const gestureActionsRef = useRef(true);
   const cropRef = useRef<Crop | null>(null);
   const ratioRef = useRef(RATIOS[0].value);
   const trackerRef = useRef<GestureRecognizer | null>(null);
@@ -82,6 +84,8 @@ export default function DrawingStage() {
   const [drawing, setDrawing] = useState(false);
   const [erasing, setErasing] = useState(false);
   const [toast, setToast] = useState("");
+  const [gestureActions, setGestureActions] = useState(true);
+  const [seen, setSeen] = useState("None");
   const [handVisible, setHandVisible] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [color, setColor] = useState(COLORS[0].value);
@@ -164,6 +168,7 @@ export default function DrawingStage() {
     if (cursorRef.current) cursorRef.current.style.display = "none";
     if (eraserRef.current) eraserRef.current.style.display = "none";
     setErasing(false);
+    setSeen("None");
     const overlay = overlayRef.current;
     overlay?.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
     setDrawing(false);
@@ -192,6 +197,7 @@ export default function DrawingStage() {
     let wasVisible = false;
     let wasErasing = false;
     const gestures = createGestureTracker();
+    let lastSeen = "None";
 
     const tick = () => {
       frameRef.current = requestAnimationFrame(tick);
@@ -213,6 +219,10 @@ export default function DrawingStage() {
         cursor.style.display = "none";
         eraser.style.display = "none";
         gestures.reset();
+        if (lastSeen !== "None") {
+          lastSeen = "None";
+          setSeen("None");
+        }
         if (wasErasing) {
           wasErasing = false;
           setErasing(false);
@@ -238,6 +248,11 @@ export default function DrawingStage() {
         top?.score ?? 0,
         performance.now()
       );
+
+      if (stable !== lastSeen) {
+        lastSeen = stable;
+        setSeen(stable);
+      }
 
       if (showSkeletonRef.current) {
         const shown = hand.map((l) => ({
@@ -265,7 +280,7 @@ export default function DrawingStage() {
         distance(hand[INDEX_TIP], hand[WRIST]) > distance(hand[INDEX_KNUCKLE], hand[WRIST]);
       const fist = stable === "Closed_Fist" && !indexOut;
       const pinching = !fist && distance(thumb, index) / handSize < PINCH_RATIO;
-      if (entered && !pinching && !fist) runGesture(entered);
+      if (entered && !pinching && !fist && gestureActionsRef.current) runGesture(entered);
 
       const raw = {
         x: ((thumb.x + index.x) / 2) * crop.vw,
@@ -641,7 +656,20 @@ export default function DrawingStage() {
           />
           Save with camera
         </label>
+        <label className="switch">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={gestureActions}
+            onChange={(e) => {
+              setGestureActions(e.target.checked);
+              gestureActionsRef.current = e.target.checked;
+            }}
+          />
+          Gesture shortcuts
+        </label>
       </div>
+      <GestureGuide seen={seen} />
     </section>
   );
 }
